@@ -97,6 +97,6 @@ router.post("/login", async(req, res) => {
             message: error.message,
         });
     }
-})
+});
 
 export default router; 
