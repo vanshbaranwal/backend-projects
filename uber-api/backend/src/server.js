@@ -1,13 +1,15 @@
-import express from "express";
+import http from "http";
+import app from "./app.js";
 
-const app = express();
 
-app.get("/", (req, res) => {
-    res.send("server is working");
+const port = process.env.PORT || 8080;
+
+const server = http.createServer(app);
+
+
+
+server.listen(port, () => {
+    console.log(`server is running on port : ${port}`);
 });
 
-
-app.listen(8080, () => {
-    console.log("server is running on port 8080");
-});
 
