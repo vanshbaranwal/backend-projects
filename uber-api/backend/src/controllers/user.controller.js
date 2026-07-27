@@ -78,9 +78,20 @@ export const loginUser = async(req, res) => {
     const token = user.generateAuthToken();
 
     res.cookie("token", token);
-    
+
     res.status(200).json({
         user,
         token,
     });
-}
+};
+
+export const getUserProfile = async(req, res) => {
+    res.status(200).json(req.user);
+};
+
+export const logoutUser = async(req, res) => {
+    res.clearCookie("token");
+    res.status(200).json({
+        message: "logged out successfully"
+    });
+};
