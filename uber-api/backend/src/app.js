@@ -26,7 +26,7 @@ app.get("/", (req, res) => {
 });
 
 // our application api roputes
-app.use("api/v1/users", router);
+app.use("/api/v1/users", router);
 
 
 
