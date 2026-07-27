@@ -4,6 +4,8 @@ import cookieParser from "cookie-parser";
 import router from "./routes/user.routes.js";
 import { connectDB } from "./lib/db.lib.js";
 import dotenv from "dotenv";
+import userRoutes from "./routes/user.routes.js";
+import captainRoutes from "./routes/captain.routes.js";
 
 const app = express();
 
@@ -26,7 +28,8 @@ app.get("/", (req, res) => {
 });
 
 // our application api roputes
-app.use("/api/v1/users", router);
+app.use("/api/v1/users", userRoutes);
+app.use("/api/v1/captain", captainRoutes);
 
 
 

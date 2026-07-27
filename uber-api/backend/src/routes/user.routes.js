@@ -3,17 +3,17 @@ import { loginValidator, registerValidator } from "../validators/user.validator.
 import { getUserProfile, loginUser, logoutUser, registerUser } from "../controllers/user.controller.js";
 import { authUser } from "../middleware/auth.middleware.js";
 
-const router = express.Router();
+const userRoutes = express.Router();
 
 
-router.post("/register", registerValidator, registerUser);
+userRoutes.post("/register", registerValidator, registerUser);
 
-router.post("/login", loginValidator, loginUser);
+userRoutes.post("/login", loginValidator, loginUser);
 
-router.get("/profile", authUser, getUserProfile);
+userRoutes.get("/profile", authUser, getUserProfile);
 
-router.get("/logout", authUser, logoutUser);
+userRoutes.get("/logout", authUser, logoutUser);
 
 
 
-export default router;
+export default userRoutes;
