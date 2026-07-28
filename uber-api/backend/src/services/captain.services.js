@@ -15,7 +15,7 @@ export const createCaptain = async({firstname, lastname, email, password, color,
         },
         email,
         password,
-        vehicles: {
+        vehicle: {          // fixed typo
             color,
             plate,
             vehicleType,
