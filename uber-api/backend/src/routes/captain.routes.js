@@ -13,7 +13,7 @@ captainRoutes.post("/login", loginValidator, loginCaptain);
 
 captainRoutes.get("/profile", authCaptain, getCaptainProfile);
 
-captainRoutes.get("logout", authCaptain, logoutCaptain); 
+captainRoutes.get("/logout", authCaptain, logoutCaptain); 
 
 
 export default captainRoutes;

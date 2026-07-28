@@ -59,7 +59,7 @@ export const loginCaptain = async(req, res) => {
 
         const { email, password } = req.body;
 
-        const captain = await captainModal.findOne({ email });
+        const captain = await captainModal.findOne({ email }).select("+password");
         if(!captain){
             return res.status(400).json({
                 message: "invalid credentials",
