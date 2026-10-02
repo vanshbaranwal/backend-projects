@@ -1,0 +1,28 @@
+{
+  "name": "zxsql",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon index.js"
+  },
+  "author": "vanshbaranwal",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@prisma/client": "^7.10.0",
+    "i": "^0.3.7",
+    "nodemon": "^3.1.14",
+    "npm": "^11.21.0",
+    "prisma": "^7.10.0"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.5",
+    "express": "^5.2.1",
+    "gitignore": "^0.7.0",
+    "jsonwebtoken": "^9.0.3",
+    "nodemailer": "^10.0.13"
+  }
+}
