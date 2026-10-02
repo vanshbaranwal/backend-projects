@@ -1,5 +1,5 @@
 import express from "express";
-import { forgotPassword, getMe, loginUser, registerUser, resetPassword, verifyUser } from "../controller/user.controller.js";
+import { forgotPassword, getMe, loginUser, logoutUser, registerUser, resetPassword, verifyUser } from "../controller/user.controller.js";
 import { isLoggedIn } from "../middleware/auth.middleware.js";
 
 
@@ -10,6 +10,7 @@ router.post("/register", registerUser);
 router.get("/verify/:token", verifyUser); // the /:token is coming from the verify controller from this line => const { token } = req.params;
 router.post("/login", loginUser);
 router.get("/me", isLoggedIn, getMe);
+router.get("/logout", isLoggedIn, logoutUser);
 router.post("/forgot-password", forgotPassword);
 router.put("/reset-password", resetPassword);
 

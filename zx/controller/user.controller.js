@@ -249,31 +249,141 @@ const loginUser = async(req, res) => {
 const getMe = async(req, res) => {
     
     try {
-        
+        const user = await User.findById(req.user.id).select("-password");
+
+        if(!user){
+            return res.status(400).json({
+                message: "user not found"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            user
+        });
+
     } catch (error) {
-        
+        return res.status(500).json({
+            success: false,
+            message: "internal server error",
+            error: error.message
+        });
     }
 };
 
 const logoutUser = async(req, res) => {
     try {
-        
+
+        const cookieOptions = {
+            httpOnly: true, //cookie gets in the control of the backend and a normal user can not tease it
+            secure: process.env.NODE_ENV === "production",
+            samesite: "none",
+            expires: new Date(0)
+        };
+
+        res.cookie("token", "", cookieOptions);
+
+        res.status(200).json({
+            success: true,
+            message: "user logged out successfully"
+        });
+
     } catch (error) {
-        
+        return res.status(500).json({
+            success: false,
+            message: "user logout failed internal server error",
+            error: error.message
+        });
     }
 };
 
-const forgotPassword = async(req, res) => {
+const forgotPassword = async (req, res) => {
+    // get email
+    // find user based on email
+    // reset token + reset expiry => Date.now() + 10*60*1000 (10min) => user.save()
+    // send email => design url
+
     try {
-        
+    
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: "email is required"
+            });
+        }
+
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "user not found"
+            });
+        }
+
+        // Generate reset token
+        const resetToken = crypto.randomBytes(32).toString("hex");
+
+        // Save token and expiry
+        user.resetPasswordToken = resetToken;
+        user.resetPasswordExpiry = Date.now() + 10 * 60 * 1000;
+
+        await user.save();
+
+        // Create reset URL
+        // const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+
+        // Send email
+        await sendEmail({
+            to: user.email,
+            subject: "Reset your password",
+            html: `
+                <h2>Password Reset</h2>
+                <p>Click the link below to reset your password:</p>
+                <a href="${resetUrl}">Reset Password</a>
+                <p>This link expires in 10 minutes.</p>
+            `
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "password reset link sent"
+        });
+
     } catch (error) {
-        
+        console.error("Forgot password error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "internal server error"
+        });
     }
 };
 
 const resetPassword = async(req, res) => {
     try {
-        
+        // collect token from params
+        // password from req.body
+        // find user
+        const { token } = req.params;
+        const { password } = req.body;
+
+        try {
+            const user = await User.findOne({
+                resetPasswordToken: token,
+                resetPasswordExpiry: { $gt: Date.now() } // here gt is for greater than and it means the expiry time should be greater than now aabhi se toh jyda hona chaiye
+
+            });
+
+            // set password in user
+            // reset token, reset expiry => reset
+            // save
+
+        } catch (error) {
+            
+        }
     } catch (error) {
         
     }
