@@ -1,14 +1,13 @@
 import Mailgen from "mailgen";
 import nodemailer from "nodemailer";
 
-
-const sendMail = async(options) => {
+const sendMail = async (options) => {
     const mailGenerator = new Mailgen({
         theme: "default",
         product: {
             name: "Task Manager",
-            link: "https://mailgen.js/"
-        }
+            link: "https://mailgen.js/",
+        },
     });
 
     const emailText = mailGenerator.generatePlaintext(options.mailGenContent);
@@ -29,7 +28,7 @@ const sendMail = async(options) => {
         to: options.email,
         subject: options.subject,
         text: emailText,
-        html: emailHtml
+        html: emailHtml,
     };
 
     try {
@@ -40,7 +39,7 @@ const sendMail = async(options) => {
 };
 
 const emailVerificationMailGenContent = (username, verificaltionUrl) => {
-    return{
+    return {
         name: username,
         intro: "welcome to taskmanager! we're excited to have you onboard",
         action: {
@@ -48,15 +47,15 @@ const emailVerificationMailGenContent = (username, verificaltionUrl) => {
             button: {
                 color: "#22BC66",
                 text: "verify your email",
-                link: verificaltionUrl
-            }
+                link: verificaltionUrl,
+            },
         },
-        outro: "need help, or have questions? just reply to this email, we'd love to help"
-    }
+        outro: "need help, or have questions? just reply to this email, we'd love to help",
+    };
 };
 
 const forgotPasswordMailGenContent = (username, passwordResetUrl) => {
-    return{
+    return {
         name: username,
         intro: "we got a request to reset your password",
         action: {
@@ -64,11 +63,17 @@ const forgotPasswordMailGenContent = (username, passwordResetUrl) => {
             button: {
                 color: "#55FB11",
                 text: "reset password",
-                link: passwordResetUrl
-            }
+                link: passwordResetUrl,
+            },
         },
-        outro: "need help, or have questions? just reply to this email, we'd love to help"
-    }
+        outro: "need help, or have questions? just reply to this email, we'd love to help",
+    };
+};
+
+export {
+    sendMail,
+    emailVerificationMailGenContent,
+    forgotPasswordMailGenContent,
 };
 
 // sendMail({
@@ -79,4 +84,3 @@ const forgotPasswordMailGenContent = (username, passwordResetUrl) => {
 //         ``
 //     )
 // });
-

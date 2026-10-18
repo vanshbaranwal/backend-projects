@@ -2,32 +2,39 @@ import { body } from "express-validator";
 
 // these are just validations which means it is not checking in the database but before that only
 
-
 const userRegistrationValidator = () => {
     return [
         body("email")
             .trim()
-            .notEmpty().withMessage("email is required")
-            .isEmail().withMessage("email is invalid"),
+            .notEmpty()
+            .withMessage("email is required")
+            .isEmail()
+            .withMessage("email is invalid"),
         body("username")
             .trim()
-            .notEmpty().withMessage("uername is required")
-            .isLength({ min: 3 }).withMessage("the username should be atleast 3 characters long")
-            .isLength({ max: 13 }).withMessage("the username should be within 13 characters")
-    ]
+            .notEmpty()
+            .withMessage("username is required")
+            .isLength({ min: 3 })
+            .withMessage("username must be at least 3 characters long")
+            .isLength({ max: 13 })
+            .withMessage("username must be at most 13 characters long"),
+        body("fullname").trim().notEmpty().withMessage("full name is required"),
+        body("password")
+            .isLength({ min: 6 })
+            .withMessage("password must be at least 6 characters long"),
+    ];
 };
-
 
 const userLoginValidator = () => {
     return [
         body("email")
             .trim()
-            .notEmpty().withMessage("email is required")
-            .isEmail().withMessage("email is invalid"),
-        body("password")
-            .notEmpty().withMessage("password is required")
-
-    ]
+            .notEmpty()
+            .withMessage("email is required")
+            .isEmail()
+            .withMessage("email is invalid"),
+        body("password").notEmpty().withMessage("password is required"),
+    ];
 };
 
 export { userRegistrationValidator, userLoginValidator };

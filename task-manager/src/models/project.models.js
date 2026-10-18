@@ -1,27 +1,24 @@
 import mongoose, { Schema } from "mongoose";
-import { StringDecoder } from "node:string_decoder";
+const projectSchema = new Schema(
+    {
+        name: {
+            type: String,
+            required: true,
+            unique: true,
+            trim: true,
+        },
 
-const projectSchema = new Schema({
+        description: {
+            type: String,
+        },
 
-    name: {
-        type: String,
-        required: true,
-        unique: true,
-        trim: true
+        createdBy: {
+            type: Schema.Types.ObjectId,
+            ref: "User",
+            required: true,
+        },
     },
-
-    description: {
-        type: String
-    },
-
-    createdBy: {
-        type: Schema.Types.ObjectId,
-        ref: "User",
-        required: true
-    }
-
-}, { timestamps: true });
-
-
+    { timestamps: true },
+);
 
 export const Project = mongoose.model("Project", projectSchema);
