@@ -1,0 +1,36 @@
+services:
+  mongo:
+    image: mongo:8
+    container_name: task-manager-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - task-manager-mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    container_name: task-manager-api
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    environment:
+      PORT: 8000
+      MONGO_URI: mongodb://mongo:27017/task-manager
+      CORS_ORIGIN: http://localhost:3000
+      ACCESS_TOKEN_SECRET: change-me-access-secret
+      ACCESS_TOKEN_EXPIRY: 1d
+      REFRESH_TOKEN_SECRET: change-me-refresh-secret
+      REFRESH_TOKEN_EXPIRY: 7d
+      FRONTEND_URL: http://localhost:3000
+
+volumes:
+  task-manager-mongo-data:

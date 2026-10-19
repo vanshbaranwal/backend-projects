@@ -7,11 +7,12 @@ import {
     updateTask,
 } from "../controllers/task.controllers.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
+import { upload } from "../middlewares/multer.middleware.js";
 
 const router = Router();
 
 router.use(verifyJWT);
-router.route("/").post(createTask);
+router.route("/").post(upload.array("attachments", 5), createTask);
 router.route("/project/:projectId").get(listTasks);
 router.route("/:taskId").get(getTask).patch(updateTask).delete(deleteTask);
 export default router;

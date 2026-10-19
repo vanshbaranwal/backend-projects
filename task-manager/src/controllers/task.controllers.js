@@ -19,10 +19,16 @@ const ensureProjectAccess = async (projectId, userId) => {
 
 const createTask = asyncHandler(async (req, res) => {
     await ensureProjectAccess(req.body.project, req.user._id);
+    const attachments = (req.files || []).map((file) => ({
+        url: `/images/${file.filename}`,
+        mimetype: file.mimetype,
+        size: file.size,
+    }));
     const task = await Task.create({
         ...req.body,
         assignedTo: req.body.assignedTo || req.user._id,
         assignedBy: req.user._id,
+        attachments,
     });
     return res
         .status(201)
@@ -31,13 +37,52 @@ const createTask = asyncHandler(async (req, res) => {
 
 const listTasks = asyncHandler(async (req, res) => {
     await ensureProjectAccess(req.params.projectId, req.user._id);
-    const tasks = await Task.find({ project: req.params.projectId }).populate(
-        "assignedTo",
-        "username email",
+    const {
+        status,
+        priority,
+        assignedTo,
+        search,
+        page = 1,
+        limit = 20,
+    } = req.query;
+    const currentPage = Math.max(Number.parseInt(page, 10) || 1, 1);
+    const pageSize = Math.min(
+        Math.max(Number.parseInt(limit, 10) || 20, 1),
+        100,
     );
-    return res
-        .status(200)
-        .json(new ApiResponse(200, tasks, "Tasks fetched successfully"));
+    const filter = { project: req.params.projectId };
+    if (status) filter.status = status;
+    if (priority) filter.priority = priority;
+    if (assignedTo) filter.assignedTo = assignedTo;
+    if (search)
+        filter.$or = [
+            { title: { $regex: search, $options: "i" } },
+            { description: { $regex: search, $options: "i" } },
+        ];
+
+    const [tasks, total] = await Promise.all([
+        Task.find(filter)
+            .sort({ dueDate: 1, createdAt: -1 })
+            .skip((currentPage - 1) * pageSize)
+            .limit(pageSize)
+            .populate("assignedTo", "username email"),
+        Task.countDocuments(filter),
+    ]);
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            {
+                tasks,
+                pagination: {
+                    page: currentPage,
+                    limit: pageSize,
+                    total,
+                    pages: Math.ceil(total / pageSize),
+                },
+            },
+            "Tasks fetched successfully",
+        ),
+    );
 });
 
 const getTask = asyncHandler(async (req, res) => {
@@ -61,12 +106,16 @@ const updateTask = asyncHandler(async (req, res) => {
         description,
         assignedTo,
         status,
+        priority,
+        dueDate,
         attachments,
     }) => ({
         title,
         description,
         assignedTo,
         status,
+        priority,
+        dueDate,
         attachments,
     }))(req.body);
     const updatedTask = await Task.findByIdAndUpdate(
