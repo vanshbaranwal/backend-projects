@@ -37,4 +37,35 @@ const userLoginValidator = () => {
     ];
 };
 
-export { userRegistrationValidator, userLoginValidator };
+const projectValidator = () => [
+    body("name")
+        .trim()
+        .notEmpty()
+        .withMessage("project name is required")
+        .isLength({ max: 100 })
+        .withMessage("project name must be at most 100 characters"),
+];
+
+const taskValidator = () => [
+    body("title").trim().notEmpty().withMessage("task title is required"),
+    body("project").isMongoId().withMessage("a valid project is required"),
+];
+
+const subTaskValidator = () => [
+    body("title").trim().notEmpty().withMessage("subtask title is required"),
+    body("task").isMongoId().withMessage("a valid task is required"),
+];
+
+const noteValidator = () => [
+    body("content").trim().notEmpty().withMessage("note content is required"),
+    body("project").isMongoId().withMessage("a valid project is required"),
+];
+
+export {
+    userRegistrationValidator,
+    userLoginValidator,
+    projectValidator,
+    taskValidator,
+    subTaskValidator,
+    noteValidator,
+};

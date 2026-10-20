@@ -1,6 +1,8 @@
 import { Project } from "../models/project.models.js";
 import { ProjectMember } from "../models/projectmember.models.js";
 import { Task } from "../models/task.models.js";
+import { SubTask } from "../models/subtask.models.js";
+import { User } from "../models/user.models.js";
 import { ApiError } from "../utils/apiErrors.utils.js";
 import { ApiResponse } from "../utils/apiResponse.utils.js";
 import { asyncHandler } from "../utils/asyncHandler.utils.js";
@@ -17,8 +19,22 @@ const ensureProjectAccess = async (projectId, userId) => {
     return project;
 };
 
+const ensureAssigneeAccess = async (projectId, assigneeId) => {
+    const user = await User.findById(assigneeId).select("_id");
+    if (!user) throw new ApiError(404, "Assigned user not found");
+    const project = await Project.findById(projectId).select("createdBy");
+    const member = await ProjectMember.exists({
+        project: projectId,
+        user: assigneeId,
+    });
+    if (!member && project.createdBy.toString() !== assigneeId.toString())
+        throw new ApiError(400, "Assigned user is not a project member");
+};
+
 const createTask = asyncHandler(async (req, res) => {
     await ensureProjectAccess(req.body.project, req.user._id);
+    const assignedTo = req.body.assignedTo || req.user._id;
+    await ensureAssigneeAccess(req.body.project, assignedTo);
     const attachments = (req.files || []).map((file) => ({
         url: `/images/${file.filename}`,
         mimetype: file.mimetype,
@@ -26,7 +42,7 @@ const createTask = asyncHandler(async (req, res) => {
     }));
     const task = await Task.create({
         ...req.body,
-        assignedTo: req.body.assignedTo || req.user._id,
+        assignedTo,
         assignedBy: req.user._id,
         attachments,
     });
@@ -118,6 +134,8 @@ const updateTask = asyncHandler(async (req, res) => {
         dueDate,
         attachments,
     }))(req.body);
+    if (allowedUpdates.assignedTo)
+        await ensureAssigneeAccess(task.project, allowedUpdates.assignedTo);
     const updatedTask = await Task.findByIdAndUpdate(
         task._id,
         { $set: allowedUpdates },
@@ -133,6 +151,7 @@ const deleteTask = asyncHandler(async (req, res) => {
     if (!task) throw new ApiError(404, "Task not found");
     await ensureProjectAccess(task.project, req.user._id);
     await task.deleteOne();
+    await SubTask.deleteMany({ task: task._id });
     return res
         .status(200)
         .json(new ApiResponse(200, null, "Task deleted successfully"));
