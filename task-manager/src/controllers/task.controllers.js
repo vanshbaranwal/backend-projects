@@ -3,6 +3,7 @@ import { ProjectMember } from "../models/projectmember.models.js";
 import { Task } from "../models/task.models.js";
 import { SubTask } from "../models/subtask.models.js";
 import { User } from "../models/user.models.js";
+import { Notification } from "../models/notification.models.js";
 import { ApiError } from "../utils/apiErrors.utils.js";
 import { ApiResponse } from "../utils/apiResponse.utils.js";
 import { asyncHandler } from "../utils/asyncHandler.utils.js";
@@ -46,6 +47,16 @@ const createTask = asyncHandler(async (req, res) => {
         assignedBy: req.user._id,
         attachments,
     });
+    if (assignedTo.toString() !== req.user._id.toString()) {
+        await Notification.create({
+            recipient: assignedTo,
+            actor: req.user._id,
+            type: "task_assigned",
+            message: `You were assigned the task: ${task.title}`,
+            resource: task._id,
+            resourceType: "Task",
+        });
+    }
     return res
         .status(201)
         .json(new ApiResponse(201, task, "Task created successfully"));
@@ -141,6 +152,20 @@ const updateTask = asyncHandler(async (req, res) => {
         { $set: allowedUpdates },
         { new: true, runValidators: true },
     );
+    if (
+        allowedUpdates.assignedTo &&
+        allowedUpdates.assignedTo.toString() !== req.user._id.toString() &&
+        allowedUpdates.assignedTo.toString() !== task.assignedTo.toString()
+    ) {
+        await Notification.create({
+            recipient: allowedUpdates.assignedTo,
+            actor: req.user._id,
+            type: "task_assigned",
+            message: `You were assigned the task: ${task.title}`,
+            resource: task._id,
+            resourceType: "Task",
+        });
+    }
     return res
         .status(200)
         .json(new ApiResponse(200, updatedTask, "Task updated successfully"));

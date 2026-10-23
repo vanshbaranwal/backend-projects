@@ -1,6 +1,7 @@
 import { Project } from "../models/project.models.js";
 import { ProjectMember } from "../models/projectmember.models.js";
 import { User } from "../models/user.models.js";
+import { Notification } from "../models/notification.models.js";
 import { ApiError } from "../utils/apiErrors.utils.js";
 import { ApiResponse } from "../utils/apiResponse.utils.js";
 import { asyncHandler } from "../utils/asyncHandler.utils.js";
@@ -70,6 +71,14 @@ const addMember = asyncHandler(async (req, res) => {
         project: req.params.projectId,
         user: user._id,
         role,
+    });
+    await Notification.create({
+        recipient: user._id,
+        actor: req.user._id,
+        type: "project_member_added",
+        message: `You were added to the project by ${req.user.username}`,
+        resource: req.params.projectId,
+        resourceType: "Project",
     });
     const populatedMember = await member.populate(
         "user",

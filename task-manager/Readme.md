@@ -10,16 +10,17 @@ The API runs on `http://localhost:8000` by default.
 
 ### Main endpoints
 
-| Area     | Endpoints                                                                                                                                 |
-| -------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Health   | `GET /api/v1/healthcheck/`                                                                                                                |
-| Auth     | `POST /api/v1/auth/register`, `/login`, `/logout`, `/refresh-token`, `/forgot-password`, `/reset-password/:token`, `/verify-email/:token` |
-| User     | `GET /api/v1/auth/me`, `PATCH /api/v1/auth/avatar`                                                                                        |
-| Projects | `POST/GET /api/v1/projects`, `GET/PATCH/DELETE /api/v1/projects/:projectId`, `GET/PATCH /:projectId/stats|archive`                         |
-| Members  | `GET/POST /api/v1/projects/:projectId/members`, `PATCH/DELETE /api/v1/projects/:projectId/members/:userId`                                |
-| Tasks    | `POST /api/v1/tasks`, `GET /api/v1/tasks/project/:projectId`, `GET/PATCH/DELETE /api/v1/tasks/:taskId`                                    |
-| Subtasks | `POST /api/v1/subtasks`, `GET /api/v1/subtasks/task/:taskId`, `PATCH/DELETE /api/v1/subtasks/:subTaskId`                                  |
-| Notes    | `POST /api/v1/notes`, `GET /api/v1/notes/project/:projectId`, `PATCH/DELETE /api/v1/notes/:noteId`                                        |
+| Area          | Endpoints                                                                                                                                 |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Health        | `GET /api/v1/healthcheck/`                                                                                                                |
+| Auth          | `POST /api/v1/auth/register`, `/login`, `/logout`, `/refresh-token`, `/forgot-password`, `/reset-password/:token`, `/verify-email/:token` |
+| User          | `GET /api/v1/auth/me`, `PATCH /api/v1/auth/avatar`                                                                                        |
+| Projects      | `POST/GET /api/v1/projects`, `GET/PATCH/DELETE /api/v1/projects/:projectId`, `GET/PATCH /:projectId/stats                                 | archive` |
+| Members       | `GET/POST /api/v1/projects/:projectId/members`, `PATCH/DELETE /api/v1/projects/:projectId/members/:userId`                                |
+| Tasks         | `POST /api/v1/tasks`, `GET /api/v1/tasks/project/:projectId`, `GET/PATCH/DELETE /api/v1/tasks/:taskId`                                    |
+| Subtasks      | `POST /api/v1/subtasks`, `GET /api/v1/subtasks/task/:taskId`, `PATCH/DELETE /api/v1/subtasks/:subTaskId`                                  |
+| Notes         | `POST /api/v1/notes`, `GET /api/v1/notes/project/:projectId`, `PATCH/DELETE /api/v1/notes/:noteId`                                        |
+| Notifications | `GET/PATCH /api/v1/notifications`, `PATCH /api/v1/notifications/:notificationId`                                                          |
 
 Protected endpoints accept either the `accessToken` cookie or an `Authorization: Bearer <accessToken>` header.
 
