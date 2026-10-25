@@ -14,7 +14,7 @@ The API runs on `http://localhost:8000` by default.
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | Health        | `GET /api/v1/healthcheck/`                                                                                                                |
 | Auth          | `POST /api/v1/auth/register`, `/login`, `/logout`, `/refresh-token`, `/forgot-password`, `/reset-password/:token`, `/verify-email/:token` |
-| User          | `GET /api/v1/auth/me`, `PATCH /api/v1/auth/avatar`                                                                                        |
+| User          | `GET/PATCH /api/v1/auth/me`, `PATCH /api/v1/auth/password`, `PATCH /api/v1/auth/avatar`, `GET /api/v1/auth/users/search?q=`               |
 | Projects      | `POST/GET /api/v1/projects`, `GET/PATCH/DELETE /api/v1/projects/:projectId`, `GET/PATCH /:projectId/stats                                 | archive` |
 | Members       | `GET/POST /api/v1/projects/:projectId/members`, `PATCH/DELETE /api/v1/projects/:projectId/members/:userId`                                |
 | Tasks         | `POST /api/v1/tasks`, `GET /api/v1/tasks/project/:projectId`, `GET/PATCH/DELETE /api/v1/tasks/:taskId`                                    |

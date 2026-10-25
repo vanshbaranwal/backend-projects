@@ -61,6 +61,24 @@ const noteValidator = () => [
     body("project").isMongoId().withMessage("a valid project is required"),
 ];
 
+const profileValidator = () => [
+    body("username")
+        .trim()
+        .isLength({ min: 3, max: 13 })
+        .withMessage("username must be 3 to 13 characters long"),
+    body("email").trim().isEmail().withMessage("email is invalid"),
+    body("fullname").trim().notEmpty().withMessage("full name is required"),
+];
+
+const changePasswordValidator = () => [
+    body("currentPassword")
+        .notEmpty()
+        .withMessage("current password is required"),
+    body("newPassword")
+        .isLength({ min: 6 })
+        .withMessage("new password must be at least 6 characters long"),
+];
+
 export {
     userRegistrationValidator,
     userLoginValidator,
@@ -68,4 +86,6 @@ export {
     taskValidator,
     subTaskValidator,
     noteValidator,
+    profileValidator,
+    changePasswordValidator,
 };

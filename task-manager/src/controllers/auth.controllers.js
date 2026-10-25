@@ -106,6 +106,70 @@ const getCurrentUser = asyncHandler(async (req, res) => {
         );
 });
 
+const updateProfile = asyncHandler(async (req, res) => {
+    const { username, email, fullname } = req.body;
+    const duplicate = await User.findOne({
+        _id: { $ne: req.user._id },
+        $or: [{ username }, { email }],
+    });
+    if (duplicate)
+        throw new ApiError(409, "Username or email is already in use");
+
+    const user = await User.findByIdAndUpdate(
+        req.user._id,
+        { $set: { username, email, fullname } },
+        { new: true, runValidators: true },
+    ).select("-password -refreshToken");
+    return res
+        .status(200)
+        .json(new ApiResponse(200, user, "Profile updated successfully"));
+});
+
+const changePassword = asyncHandler(async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+    const user = await User.findById(req.user._id);
+    if (!(await user.isPasswordCorrect(currentPassword)))
+        throw new ApiError(401, "Current password is incorrect");
+
+    user.password = newPassword;
+    user.refreshToken = undefined;
+    await user.save();
+    return res
+        .status(200)
+        .clearCookie("accessToken", cookieOptions)
+        .clearCookie("refreshToken", cookieOptions)
+        .json(
+            new ApiResponse(
+                200,
+                null,
+                "Password changed successfully; please log in again",
+            ),
+        );
+});
+
+const searchUsers = asyncHandler(async (req, res) => {
+    const query = String(req.query.q || "").trim();
+    if (query.length < 2)
+        throw new ApiError(
+            400,
+            "Search query must contain at least 2 characters",
+        );
+
+    const users = await User.find({
+        _id: { $ne: req.user._id },
+        $or: [
+            { username: { $regex: query, $options: "i" } },
+            { email: { $regex: query, $options: "i" } },
+            { fullname: { $regex: query, $options: "i" } },
+        ],
+    })
+        .select("username email fullname avatar")
+        .limit(20);
+    return res
+        .status(200)
+        .json(new ApiResponse(200, users, "Users found successfully"));
+});
+
 const refreshAccessToken = asyncHandler(async (req, res) => {
     const incomingToken = req.cookies?.refreshToken || req.body.refreshToken;
     if (!incomingToken) throw new ApiError(401, "Refresh token is required");
@@ -229,4 +293,7 @@ export {
     forgotPassword,
     resetPassword,
     updateAvatar,
+    updateProfile,
+    changePassword,
+    searchUsers,
 };
