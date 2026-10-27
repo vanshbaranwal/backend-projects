@@ -245,6 +245,82 @@ app.listen(port, () => {
 
 Keep explanations in this notes file. `tsconfig.json` supports JSON with comments, so comments are allowed there.
 
+## 13. `async` and `await` with Axios
+
+`axios.get()` sends an HTTP request and immediately returns a `Promise`. The actual API result arrives later.
+
+```ts
+app.get("/books", async (req, res) => {
+  try {
+    const response = await axios.get(
+      "https://api.freeapi.app/api/v1/public/books"
+    );
+
+    return res.json(response.data);
+  } catch (error) {
+    return res.status(500).json({ message: "Failed to fetch books" });
+  }
+});
+```
+
+- `async` allows the route function to use `await`.
+- `await` waits for the Axios promise to finish and gives its resolved response.
+- Without `await`, `response` would be a `Promise`, not the returned book data.
+- `response.data` contains the API response body.
+- The route must call `res.json()`, `res.send()`, or another response method; otherwise the client's request keeps waiting.
+- Use `try/catch` because the external API request can fail.
+
+## 14. ioredis: "not constructable" error
+
+This default import causes a TypeScript error with the installed ioredis 6 and the project's NodeNext/ESM settings:
+
+```ts
+import Redis from "ioredis";
+```
+
+TypeScript interprets that import as the complete ioredis module object. A module object cannot be created with `new`, so it reports that the expression has no construct signatures.
+
+Import the named `Redis` class instead:
+
+```ts
+import { Redis } from "ioredis";
+
+const redis = new Redis({
+  host: "localhost",
+  port: 6379
+});
+```
+
+`6379` is already a number, so `Number(6379)` is unnecessary.
+
+## 15. Docker Compose: invalid Valkey image reference
+
+An image reference follows `owner/image:tag`. This is invalid because it contains two tag separators:
+
+```yaml
+image: valkey:valkey:latest
+```
+
+Use the official Valkey image name:
+
+```yaml
+services:
+  redis:
+    image: valkey/valkey:latest
+    ports:
+      - "6379:6379"
+```
+
+Then start and verify it:
+
+```powershell
+docker compose up -d
+docker compose ps
+docker compose exec redis valkey-cli ping
+```
+
+A successful ping returns `PONG`.
+
 ## Daily commands
 
 While developing:
