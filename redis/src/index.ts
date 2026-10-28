@@ -7,19 +7,32 @@ import { Server } from "socket.io";
 
 const app = express(); // express server
 
+const state = new Array(100).fill(false);
+
 const httpServer = http.createServer(app); // http server (mounting http server on the express server)
 const io = new Server() // socket server
 
 io.attach(httpServer);
 
 io.on("connection", (socket) => {
-    console.log("socket connected", socket.id)
+    console.log("socket connected", socket.id);
+    socket.on("message", (msg) => {
+        io.emit("server-message", msg); // broadcast to all the connected clients
+    });
+
+    socket.on("checkbox-update", (data) => {
+        state[data.index] = data.value
+        io.emit("checkbox-update", data);
+    });
 });
 
 const port = process.env.PORT || 8000;
 
 
 const redis = new Redis({ host: "localhost", port: Number(6379) });
+
+app.use(express.static("./public"));
+
 
 // basic rate limit middleware
 app.use(async function(req, res, next) {
@@ -31,12 +44,17 @@ app.use(async function(req, res, next) {
         await redis.expire(key, 60); // 60seconds it is
     }
 
-    if(Number(value) > 10){ // less than 10 times in a minute
+    if(Number(value) > 100){ // up to 100 requests in a minute
         return res.status(429).json({ message: "too many requests" });
     }
 
     redis.incr(key);
     next();
+});
+
+
+app.get("/state", (req, res) => {
+    return res.json({ state });
 });
 
 

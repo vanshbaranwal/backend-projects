@@ -6,6 +6,60 @@
     <title>socket</title>
 </head>
 <body>
+    <div id="checkbox-container">
 
+    </div>
+    <ul id="messages-container"></ul>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+
+        const checkboxes = new Array(100).fill(false);
+        const checkboxContainer = document.getElementById("checkbox-container");
+
+
+        checkboxes.forEach((checkbox, i) => {
+            const input = document.createElement("input");
+            input.setAttribute("type", "checkbox");
+            input.id = `index-${i}`;
+            input.addEventListener("change", (e) => {
+                socket.emit("checkbox-update", { index: i, value: input.checked });
+            });
+            checkboxContainer.append(input);
+        });
+
+        const socket = io();    //connects to the backend over web socket
+        const messageContainer = document.getElementById("messages-container");
+
+        async function stateUpdate(){
+            const resp = await fetch("/state", {
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            });
+
+            const _json = await resp.json();
+            if(_json.state){
+                _json.state.forEach((checked, index) => {
+                    const input = document.getElementById(`index-${index}`);
+                    if(input instanceof HTMLInputElement){
+                        input.checked = checked;
+                    }
+                });
+            }
+        }
+
+
+        socket.on("checkbox-update", ({ index, value }) => {
+            stateUpdate();
+        });
+
+        socket.on("server-message", msg => {
+            const li = document.createElement('li');
+            li.innerText = msg;
+            messageContainer.appendChild(li);
+        });
+
+        stateUpdate();
+    </script>
 </body>
 </html>
