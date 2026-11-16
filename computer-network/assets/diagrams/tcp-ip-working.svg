@@ -1,121 +1,92 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
-  <title id="title">TCP/IP Working</title>
-  <desc id="desc">A client reaches video and mail applications through switches, routers, and a server. Five colored paths show the TCP/IP layers.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title description">
+  <title id="title">TCP/IP working across a routed network</title>
+  <desc id="description">A browser on a client sends an HTTPS request to a web server. Application and transport are end-to-end, IP is forwarded by routers, and a fresh link frame and physical signal carry the packet on each hop.</desc>
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#080c11"/>
-      <stop offset="1" stop-color="#121b26"/>
-    </linearGradient>
-    <linearGradient id="screen" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#4f7cff"/>
-      <stop offset="0.55" stop-color="#7c3aed"/>
-      <stop offset="1" stop-color="#f97316"/>
-    </linearGradient>
-    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
-      <feDropShadow dx="0" dy="9" stdDeviation="10" flood-color="#000" flood-opacity="0.4"/>
-    </filter>
-    <marker id="blue-arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0 0L12 6 0 12Z" fill="#58a6ff"/></marker>
-    <marker id="red-arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0 0L12 6 0 12Z" fill="#ff5d67"/></marker>
-    <marker id="orange-arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0 0L12 6 0 12Z" fill="#ff9f43"/></marker>
-    <marker id="green-arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0 0L12 6 0 12Z" fill="#63d471"/></marker>
-    <symbol id="switch" viewBox="0 0 120 86">
-      <rect width="120" height="86" rx="18" fill="#f28e2b"/>
-      <g fill="none" stroke="#111923" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M25 29h70M25 29l14-12M25 29l14 12M95 29L81 17M95 29L81 41"/>
-        <path d="M25 58h70M25 58l14-12M25 58l14 12M95 58L81 46M95 58L81 70"/>
-      </g>
-    </symbol>
-    <symbol id="router" viewBox="0 0 120 120">
-      <circle cx="60" cy="60" r="56" fill="#f59e42"/>
-      <g fill="none" stroke="#101820" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M60 23v74M23 60h74"/>
-        <path d="M60 23L46 37M60 23l14 14M97 60L83 46M97 60L83 74M60 97L46 83M60 97l14-14M23 60l14-14M23 60l14 14"/>
-      </g>
-    </symbol>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0 0 10 5 0 10Z" fill="#d8e4f0"/></marker>
+    <marker id="cyanArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0 0 10 5 0 10Z" fill="#59d6e8"/></marker>
+    <style>
+      text{font-family:Inter,Segoe UI,Arial,sans-serif}
+      .title{font-size:48px;font-weight:700;fill:#f5f7fb}
+      .sub{font-size:23px;fill:#aebed0}
+      .head{font-size:23px;font-weight:700;fill:#f6f8fc}
+      .body{font-size:20px;fill:#e0e8f2}
+      .small{font-size:17px;fill:#aebed0}
+      .tag{font-size:18px;font-weight:700;fill:#08151d}
+      .app{fill:#194461;stroke:#4db7f2}
+      .transport{fill:#603942;stroke:#ff8f9b}
+      .internet{fill:#635036;stroke:#ffc477}
+      .link{fill:#315747;stroke:#8fe0a9}
+      .physical{fill:#453b66;stroke:#ba9ef5}
+      .layer{stroke-width:2}
+      .path{stroke:#d8e4f0;stroke-width:4;fill:none;marker-end:url(#arrow)}
+      .logical{stroke:#59d6e8;stroke-width:3;stroke-dasharray:10 8;fill:none;marker-end:url(#cyanArrow)}
+    </style>
   </defs>
+  <rect width="1600" height="900" fill="#0b1420"/>
+  <text x="70" y="78" class="title">TCP/IP: one request, several layers</text>
+  <text x="70" y="116" class="sub">Example: a browser requests a page from a web server over HTTPS</text>
 
-  <rect width="1600" height="900" fill="url(#bg)"/>
-  <circle cx="1430" cy="100" r="300" fill="#1b2735" opacity="0.26"/>
-  <circle cx="180" cy="760" r="250" fill="#172334" opacity="0.3"/>
+  <text x="88" y="188" class="head">Client endpoint</text>
+  <text x="1210" y="188" class="head">Server endpoint</text>
+  <text x="610" y="188" class="head">Network devices</text>
 
-  <g font-family="Inter, Segoe UI, Arial, sans-serif">
-    <text x="64" y="78" fill="#f7d6c4" font-size="50" font-weight="700">TCP/IP Working</text>
-    <text x="66" y="116" fill="#929eac" font-size="20">How a request travels from a client to internet services</text>
-
-    <!-- Layer paths -->
-    <path d="M172 575V170H1470V230" fill="none" stroke="#58a6ff" stroke-width="5" marker-end="url(#blue-arrow)"/>
-    <path d="M172 575V295H1370V492" fill="none" stroke="#ff5d67" stroke-width="5" marker-end="url(#red-arrow)"/>
-    <path d="M172 575V420H1308V560" fill="none" stroke="#ff9f43" stroke-width="5" marker-end="url(#orange-arrow)"/>
-    <path d="M260 585H360V550H555" fill="none" stroke="#63d471" stroke-width="5" marker-end="url(#green-arrow)"/>
-    <path d="M655 550H835" fill="none" stroke="#63d471" stroke-width="5" marker-end="url(#green-arrow)"/>
-    <path d="M935 550H1060V585H1260" fill="none" stroke="#63d471" stroke-width="5" marker-end="url(#green-arrow)"/>
-    <path d="M260 720H1280" fill="none" stroke="#a78bfa" stroke-width="5"/>
-
-    <!-- Layer labels -->
-    <g font-size="24" font-weight="600" text-anchor="middle">
-      <rect x="690" y="150" width="220" height="40" rx="20" fill="#0c121a"/><text x="800" y="178" fill="#58a6ff">Application</text>
-      <rect x="705" y="275" width="190" height="40" rx="20" fill="#0c121a"/><text x="800" y="303" fill="#ff5d67">Transport</text>
-      <rect x="710" y="400" width="180" height="40" rx="20" fill="#0c121a"/><text x="800" y="428" fill="#ff9f43">Internet</text>
-      <rect x="695" y="530" width="210" height="40" rx="20" fill="#0c121a"/><text x="800" y="558" fill="#63d471">Data Link</text>
-      <rect x="710" y="700" width="180" height="40" rx="20" fill="#0c121a"/><text x="800" y="728" fill="#a78bfa">Physical</text>
-    </g>
-
-    <!-- Client -->
-    <g filter="url(#shadow)">
-      <rect x="70" y="565" width="190" height="125" rx="14" fill="#202b38" stroke="#536477" stroke-width="3"/>
-      <rect x="86" y="581" width="158" height="93" rx="8" fill="url(#screen)"/>
-      <path d="M52 692h226l22 36H30Z" fill="#334152"/>
-      <rect x="128" y="701" width="74" height="8" rx="4" fill="#718297"/>
-    </g>
-    <text x="165" y="765" text-anchor="middle" fill="#f2f5f8" font-size="22" font-weight="600">Client</text>
-    <text x="165" y="797" text-anchor="middle" fill="#aab6c2" font-size="20">192.0.0.1</text>
-
-    <!-- Network devices -->
-    <use href="#switch" x="340" y="625" width="120" height="86" filter="url(#shadow)"/>
-    <text x="400" y="755" text-anchor="middle" fill="#dce3ea" font-size="19">Switch 1</text>
-    <use href="#router" x="550" y="605" width="120" height="120" filter="url(#shadow)"/>
-    <text x="610" y="755" text-anchor="middle" fill="#dce3ea" font-size="19">Router 1</text>
-    <use href="#router" x="830" y="605" width="120" height="120" filter="url(#shadow)"/>
-    <text x="890" y="755" text-anchor="middle" fill="#dce3ea" font-size="19">Router 2</text>
-    <use href="#switch" x="1045" y="625" width="120" height="86" filter="url(#shadow)"/>
-    <text x="1105" y="755" text-anchor="middle" fill="#dce3ea" font-size="19">Switch 2</text>
-
-    <!-- Server -->
-    <g filter="url(#shadow)">
-      <circle cx="1335" cy="635" r="74" fill="#f3ad45"/>
-      <circle cx="1288" cy="655" r="56" fill="#ef9334"/>
-      <circle cx="1390" cy="658" r="60" fill="#ef9334"/>
-      <rect x="1260" y="645" width="170" height="80" rx="35" fill="#ef9334"/>
-      <rect x="1320" y="620" width="90" height="135" rx="10" fill="#d97828" stroke="#ffc06a" stroke-width="3"/>
-      <g fill="#f6ad55"><rect x="1335" y="640" width="60" height="20" rx="5"/><rect x="1335" y="674" width="60" height="20" rx="5"/><rect x="1335" y="708" width="60" height="20" rx="5"/></g>
-    </g>
-    <text x="1350" y="795" text-anchor="middle" fill="#f2f5f8" font-size="22" font-weight="600">Server</text>
-    <text x="1350" y="826" text-anchor="middle" fill="#aab6c2" font-size="20">142.250.0.0</text>
-
-    <!-- Application services -->
-    <g filter="url(#shadow)">
-      <rect x="1180" y="215" width="190" height="108" rx="22" fill="#ff4545"/>
-      <path d="M1257 239v61l55-31Z" fill="#fff"/>
-    </g>
-    <text x="1275" y="351" text-anchor="middle" fill="#f2f5f8" font-size="21" font-weight="600">Video Service</text>
-    <text x="1275" y="381" text-anchor="middle" fill="#ff9aa1" font-size="19">Port 443</text>
-
-    <g filter="url(#shadow)">
-      <rect x="1400" y="215" width="140" height="108" rx="22" fill="#f1f5f9"/>
-      <path d="M1418 239l52 42 52-42v64h-104Z" fill="#ea4335"/>
-      <path d="M1418 239l52 39 52-39" fill="none" stroke="#fbbc04" stroke-width="12" stroke-linejoin="round"/>
-    </g>
-    <text x="1470" y="351" text-anchor="middle" fill="#f2f5f8" font-size="21" font-weight="600">Mail Service</text>
-    <text x="1470" y="381" text-anchor="middle" fill="#ff9aa1" font-size="19">Port 25</text>
-    <path d="M1275 323v170M1470 323v170M1275 493h195" fill="none" stroke="#ff5d67" stroke-width="4"/>
-
-    <!-- Legend -->
-    <g transform="translate(66 856)" font-size="17" fill="#bdc7d3">
-      <circle cx="0" cy="0" r="7" fill="#58a6ff"/><text x="16" y="6">Application service</text>
-      <circle cx="205" cy="0" r="7" fill="#ff5d67"/><text x="221" y="6">Process-to-process</text>
-      <circle cx="445" cy="0" r="7" fill="#ff9f43"/><text x="461" y="6">Host-to-host</text>
-      <circle cx="630" cy="0" r="7" fill="#63d471"/><text x="646" y="6">Hop-to-hop</text>
-      <circle cx="800" cy="0" r="7" fill="#a78bfa"/><text x="816" y="6">Signals and media</text>
-    </g>
+  <!-- Endpoint stacks. The arrows between them show conceptual communication, not a bypass around routers. -->
+  <g>
+    <rect x="75" y="215" width="310" height="58" rx="12" class="layer app"/>
+    <text x="98" y="251" class="body">Application · HTTP request</text>
+    <rect x="75" y="283" width="310" height="58" rx="12" class="layer transport"/>
+    <text x="98" y="319" class="body">Transport · TCP :443</text>
+    <rect x="75" y="351" width="310" height="58" rx="12" class="layer internet"/>
+    <text x="98" y="387" class="body">Internet · IP packet</text>
+    <rect x="75" y="419" width="310" height="58" rx="12" class="layer link"/>
+    <text x="98" y="455" class="body">Data link · local frame</text>
+    <rect x="75" y="487" width="310" height="58" rx="12" class="layer physical"/>
+    <text x="98" y="523" class="body">Physical · signals</text>
+    <path d="M230 273V283M230 341V351M230 409V419M230 477V487" class="path"/>
   </g>
+  <g>
+    <rect x="1205" y="215" width="310" height="58" rx="12" class="layer app"/>
+    <text x="1228" y="251" class="body">Application · web service</text>
+    <rect x="1205" y="283" width="310" height="58" rx="12" class="layer transport"/>
+    <text x="1228" y="319" class="body">Transport · TCP :443</text>
+    <rect x="1205" y="351" width="310" height="58" rx="12" class="layer internet"/>
+    <text x="1228" y="387" class="body">Internet · IP packet</text>
+    <rect x="1205" y="419" width="310" height="58" rx="12" class="layer link"/>
+    <text x="1228" y="455" class="body">Data link · local frame</text>
+    <rect x="1205" y="487" width="310" height="58" rx="12" class="layer physical"/>
+    <text x="1228" y="523" class="body">Physical · signals</text>
+    <path d="M1360 487V477M1360 419V409M1360 351V341M1360 283V273" class="path"/>
+  </g>
+
+  <path d="M385 244H1205" class="logical"/>
+  <text x="609" y="234" class="small">logical application conversation (end to end)</text>
+  <path d="M385 312H1205" class="logical"/>
+  <text x="681" y="302" class="small">TCP connection (end to end)</text>
+  <path d="M385 380H585M1025 380H1205" class="logical"/>
+  <text x="685" y="370" class="small">IP forwarded by routers</text>
+
+  <!-- Physical topology. Switches forward frames within their LAN; routers build the next link's frame. -->
+  <rect x="90" y="620" width="165" height="74" rx="15" class="layer physical"/>
+  <text x="130" y="665" class="body">Client</text>
+  <rect x="332" y="620" width="165" height="74" rx="15" class="layer link"/>
+  <text x="370" y="665" class="body">Switch A</text>
+  <rect x="574" y="620" width="165" height="74" rx="15" class="layer internet"/>
+  <text x="615" y="665" class="body">Router A</text>
+  <rect x="816" y="620" width="165" height="74" rx="15" class="layer internet"/>
+  <text x="857" y="665" class="body">Router B</text>
+  <rect x="1058" y="620" width="165" height="74" rx="15" class="layer link"/>
+  <text x="1096" y="665" class="body">Switch B</text>
+  <rect x="1300" y="620" width="165" height="74" rx="15" class="layer physical"/>
+  <text x="1340" y="665" class="body">Server</text>
+  <path d="M255 657H332M497 657H574M739 657H816M981 657H1058M1223 657H1300" class="path"/>
+  <text x="126" y="732" class="small">Host</text>
+  <text x="360" y="732" class="small">Local LAN</text>
+  <text x="596" y="732" class="small">First gateway</text>
+  <text x="836" y="732" class="small">Next network</text>
+  <text x="1082" y="732" class="small">Server LAN</text>
+  <text x="1330" y="732" class="small">Host</text>
+
+  <rect x="75" y="775" width="1440" height="88" rx="16" fill="#162635" stroke="#37516a" stroke-width="2"/>
+  <text x="100" y="810" class="head">At each router:</text>
+  <text x="100" y="843" class="body">Remove incoming frame → inspect destination IP → choose next hop → create a new outgoing frame.</text>
 </svg>
