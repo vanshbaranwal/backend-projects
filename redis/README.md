@@ -1,9 +1,10 @@
 # Redis Notes
 
 Redis is an **in-memory data structure store** commonly used as a cache, database,
-message broker, and streaming engine. These notes begin with the performance
-problem Redis solves and then build toward caching, distributed systems, Valkey,
-and Redis Streams.
+message broker, and streaming engine. Imagine a busy shop: the main database is
+its complete stockroom record, while Redis can keep frequently requested answers
+at the counter. These notes follow that idea from one slow query to a shared
+cache and, finally, a stream of incoming events.
 
 ## Additional Documentation
 
@@ -32,20 +33,17 @@ and the server reads from or writes to a database.
 
 ```mermaid
 flowchart LR
-    U1[User 1] -->|Request| APP[Application Server]
-    U2[User 2] -->|Request| APP
-    U3[User 3] -->|Request| APP
-    APP -->|Query / write| DB[(Primary Database)]
-    DB --> DISK[(SSD / HDD\nSecondary Storage)]
-    DB -->|Result| APP
-    APP -->|Response| U1
-    APP -->|Response| U2
-    APP -->|Response| U3
+    U1[User A] -->|request| APP[Application server]
+    U2[User B] -->|request| APP
+    U3[User C] -->|request| APP
+    APP <-->|queries and results| DB[(Primary database)]
+    DB <-->|as needed| STORAGE[(Memory pages and durable storage)]
 ```
 
-The database provides a reliable data layer that keeps data consistent and
-durable. This reliability has a cost: parsing queries, finding data, reading
-storage pages, joining rows, locking, and transferring results all add overhead.
+The primary database provides the authoritative data layer. Depending on the
+database and configuration, it may read cached pages from memory or durable
+storage. Query parsing, joins, locks, computation, and network transfer can
+still add substantial work. A database lookup is **not always a disk read**.
 
 Modern users expect pages and APIs to respond quickly. A fast internet connection
 cannot fix a slow database query, so repeated database work can still produce a
@@ -56,6 +54,10 @@ slow application and a poor user experience.
 
 Redis does not replace the primary database in this scenario. It adds a fast
 in-memory layer for data that benefits from quick access.
+
+**Remember it:** A shopkeeper can repeatedly search the stockroom ledger for a
+popular item, or keep the latest answer at the counter. The ledger remains the
+source of truth.
 
 ---
 
@@ -88,6 +90,10 @@ Exact latency depends on the hardware, network, data size, and command. The
 important point is that an in-memory lookup is normally much faster than repeating
 a complex database operation.
 
+**Remember it:** RAM is a small desk beside you; disk storage is a much larger
+filing room. The desk is faster to reach but cannot hold every folder, and its
+contents need protection if the machine stops.
+
 ---
 
 ## 3. Caching an expensive result
@@ -105,16 +111,22 @@ store it in Redis under a key such as `orders:total-sales`.
 ### Cache-aside read pattern
 
 ```mermaid
-flowchart TD
-    USER[User] --> APP[Application Server]
-    APP -->|1. GET orders:total-sales| REDIS[(Redis Cache)]
-    REDIS --> HIT{Key found?}
-    HIT -->|Yes: cache hit| RETURN[Return cached result]
-    HIT -->|No: cache miss| DB[(Primary Database)]
-    DB -->|2. Run expensive query| APP
-    APP -->|3. SET result with TTL| REDIS
-    APP --> RETURN
-    RETURN --> USER
+sequenceDiagram
+    participant U as User
+    participant A as Application
+    participant R as Redis
+    participant D as Primary database
+    U->>A: Request total sales
+    A->>R: GET orders:total-sales
+    alt Cache hit
+        R-->>A: Cached total
+    else Cache miss
+        R-->>A: nil
+        A->>D: Calculate total sales
+        D-->>A: Fresh total
+        A->>R: SET total with TTL
+    end
+    A-->>U: Return total sales
 ```
 
 The application follows this sequence:
@@ -145,6 +157,10 @@ async function getTotalSales() {
 The database remains the source of truth; Redis holds a temporary copy of the
 computed result.
 
+**Remember it:** The first customer makes the shopkeeper calculate today's
+total. The result goes on a sticky note; later customers can read the note
+until it expires. This is a cache hit after the first cache miss.
+
 ---
 
 ## 4. The cache invalidation problem
@@ -169,9 +185,15 @@ sequenceDiagram
     A->>D: Write and commit the change
     D-->>A: Success
     A->>R: DEL orders:total-sales
-    R-->>A: Cache key removed
+    R-->>A: Key removed
     A-->>U: Update successful
-    Note over A,R: The next read is a cache miss and rebuilds the value.
+    U->>A: Request total sales
+    A->>R: GET orders:total-sales
+    R-->>A: nil (cache miss)
+    A->>D: Recalculate total
+    D-->>A: New total
+    A->>R: SET new total with TTL
+    A-->>U: New total
 ```
 
 Example pseudocode:
@@ -195,6 +217,10 @@ Important real-world rules:
 Clearing every cached value after each write is simple, but it removes useful hot
 data and causes many requests to hit the database again.
 
+**Remember it:** If the stockroom ledger changes from `500M` to `600M`, erase
+the old total on the counter's sticky note. The next reader gets a freshly
+calculated note. Erasing *all* notes after one order wastes useful work.
+
 ---
 
 ## 5. Limited memory and eviction
@@ -206,16 +232,18 @@ Current cache: [1] [2] [3] [4]
 New item:      [5]
 ```
 
-When item `5` arrives, Redis may need to remove an older key. With an LRU-style
-policy, it evicts a key that has not been used recently.
+When item `5` arrives, Redis may need to remove an older key **if a memory limit
+and an eviction policy are configured**. An LRU-style policy selects a key that
+has not been used recently; other policies make different choices.
 
 ```mermaid
-flowchart LR
-    NEW[New key: 5] --> FULL{Memory limit reached?}
-    FULL -->|No| ADD[Store key 5]
-    FULL -->|Yes| POLICY[Apply configured eviction policy]
-    POLICY --> EVICT[Evict a candidate key]
-    EVICT --> ADD
+flowchart TD
+    W[Write key 5] --> LIMIT{Would configured maxmemory be exceeded?}
+    LIMIT -->|no| SAVE[Keep key 5]
+    LIMIT -->|yes| POLICY{Configured policy}
+    POLICY -->|allkeys-lru, for example| EVICT[Sample keys and evict a candidate]
+    EVICT --> SAVE
+    POLICY -->|noeviction| ERROR[Reject memory-growing write]
 ```
 
 Redis memory behavior is controlled using `maxmemory` and
@@ -230,6 +258,10 @@ Redis memory behavior is controlled using `maxmemory` and
 Redis uses an approximation of LRU rather than maintaining a perfect global LRU
 list. The correct policy depends on whether Redis is being used purely as a cache
 or also holds data that must not be evicted.
+
+**Remember it:** A four-slot shelf is full. If the policy is LRU, remove an
+item that has sat untouched for the longest time to make room for item `5`.
+With `noeviction`, the shelf refuses the new item instead.
 
 ---
 
@@ -261,6 +293,10 @@ Redis runs as its own server process. Application servers connect to it over the
 network, usually on port `6379`, and issue commands such as `GET`, `SET`, `DEL`,
 `HGET`, and `XADD`.
 
+**Remember it:** PostgreSQL and Redis are both services you ask questions of.
+PostgreSQL usually keeps the authoritative business records; Redis often keeps
+quickly accessible copies or short-lived state. Their roles depend on the app.
+
 ### Redis is not always non-persistent
 
 Redis is memory-first, but saying that it is never persistent is incorrect. Redis
@@ -275,6 +311,10 @@ Durability must be configured according to the use case. Even with persistence,
 Redis should not automatically be treated as a replacement for the application's
 primary database.
 
+**Remember it:** Keeping a copy of the desk notes in a notebook is like
+enabling snapshots or a write log. It helps recovery, but the amount of recent
+work at risk depends on how and when the notebook is updated.
+
 ---
 
 ## 7. Redis in a distributed system
@@ -285,20 +325,16 @@ use the same cached data.
 
 ```mermaid
 flowchart TB
-    USERS[Users] --> LB[Load Balancer]
-    LB --> A1[Application Server 1]
-    LB --> A2[Application Server 2]
-    LB --> A3[Application Server 3]
-
-    A1 --> REDIS[(Shared Redis Cache)]
-    A2 --> REDIS
-    A3 --> REDIS
-
-    A1 --> DB[(Primary Database)]
-    A2 --> DB
-    A3 --> DB
-
-    REDIS -. Cache miss / invalidation .-> DB
+    USERS[Users] --> LB[Load balancer]
+    LB --> A1[App instance 1]
+    LB --> A2[App instance 2]
+    LB --> A3[App instance 3]
+    A1 <-->|cache reads / invalidations| R[(Shared Redis)]
+    A2 <-->|cache reads / invalidations| R
+    A3 <-->|cache reads / invalidations| R
+    A1 <-->|misses and writes| DB[(Primary database)]
+    A2 <-->|misses and writes| DB
+    A3 <-->|misses and writes| DB
 ```
 
 This is a **distributed cache** because separate application processes use a
@@ -312,6 +348,10 @@ Benefits include:
   individual process.
 - Redis commands are atomic, so many clients can safely operate on keys; however,
   multi-step application workflows can still have race conditions.
+
+**Remember it:** Three cashiers share one counter note rather than each keeping
+a private note. Any cashier can serve the next customer, and each cashier can
+consult the stockroom ledger on a miss.
 
 ---
 
@@ -334,6 +374,9 @@ an immediate correctness failure whenever possible. If Redis is unavailable, the
 application can temporarily read from the primary database, subject to rate and
 capacity limits.
 
+**Remember it:** If the counter notes disappear, the shop can still consult
+the stockroom ledger, but a sudden crowd might overwhelm the stockroom staff.
+
 ---
 
 ## 9. Valkey
@@ -353,6 +396,11 @@ services:
       - "6379:6379"
 ```
 
+This local Compose example has no persistent volume. If the container is
+recreated, do not assume its data survives. That is acceptable for a
+rebuildable cache; durable data needs a deliberately configured storage and
+recovery plan.
+
 For repeatable production builds, pin a tested version instead of relying on
 `latest`:
 
@@ -370,6 +418,10 @@ Existing Redis-compatible clients such as `ioredis` can connect to Valkey throug
 the same Redis protocol. Compatibility should still be tested before migrating a
 production workload, especially when moving between newer major versions.
 
+**Remember it:** Valkey is another implementation that speaks the familiar
+Redis protocol, much as two brands of router can follow the same networking
+standard. Test the features your application actually uses before switching.
+
 ---
 
 ## 10. Redis Streams for high-throughput data
@@ -380,18 +432,15 @@ producers and downstream workers.
 
 ```mermaid
 flowchart LR
-    P1[Producer 1] -->|XADD| STREAM[(Redis Stream)]
-    P2[Producer 2] -->|XADD| STREAM
-    P3[Producer 3] -->|XADD| STREAM
-
-    STREAM -->|XREADGROUP| C1[Batch Worker 1]
-    STREAM -->|XREADGROUP| C2[Batch Worker 2]
-    C1 -->|Batch writes| DB[(Primary Database)]
-    C2 -->|Batch writes| DB
-    C1 -->|XACK after success| STREAM
-    C2 -->|XACK after success| STREAM
-
-    STREAM -->|Independent consumer group| LIVE[Real-time Consumer]
+    P1[Producer A] -->|XADD| S[(Redis Stream)]
+    P2[Producer B] -->|XADD| S
+    S -->|XREADGROUP: database group| W1[Worker 1]
+    S -->|XREADGROUP: database group| W2[Worker 2]
+    W1 -->|batch write| DB[(Primary database)]
+    W2 -->|batch write| DB
+    W1 -.->|XACK after success| S
+    W2 -.->|XACK after success| S
+    S -->|separate consumer group| LIVE[Real-time processor]
 ```
 
 Real-world flow:
@@ -400,7 +449,9 @@ Real-world flow:
 2. Redis stores every event with an ordered stream ID.
 3. Workers in a consumer group use `XREADGROUP` to share the work.
 4. Workers process events and write them to the database, often in batches.
-5. A worker sends `XACK` only after processing succeeds.
+5. A worker sends `XACK` to Redis only after processing succeeds. Acknowledging
+   removes the entry from that group's pending list; it does not by itself
+   delete the entry from the stream.
 6. Pending, failed, and retried messages must be monitored.
 
 Streams can absorb bursts and allow consumers to process data at a controlled
@@ -414,20 +465,25 @@ background jobs, and moving data into durable storage. For large, long-retention
 multi-partition event platforms, a dedicated streaming system may be more
 appropriate.
 
+**Remember it:** Producers put order slips on a numbered conveyor belt.
+Workers take slips at a sustainable pace, write completed orders to the ledger,
+and mark their own work done. If slips arrive faster than workers finish, the
+belt fills up; the buffer does not create unlimited capacity.
+
 ---
 
 ## 11. Quick summary
 
 ```mermaid
 flowchart LR
-    PROBLEM[Repeated DB work is slow] --> CACHE[Cache hot/computed data in Redis]
-    CACHE --> FAST[Fast repeated reads]
-    CACHE --> ISSUES[New concerns]
-    ISSUES --> INVALIDATE[Invalidation and TTL]
-    ISSUES --> MEMORY[Memory limits and eviction]
-    ISSUES --> FAILURE[Failure handling and persistence]
-    CACHE --> SCALE[Shared cache for many app servers]
-    CACHE --> STREAMS[Streams for buffered event processing]
+    USER[User requests] --> APP[Application instances]
+    APP -->|read hot value| CACHE[(Redis cache)]
+    APP -->|miss or authoritative write| DB[(Primary database)]
+    DB -->|new value| APP
+    APP -->|fill or invalidate| CACHE
+    PRODUCERS[Event producers] -->|XADD| STREAM[(Redis Stream)]
+    STREAM -->|worker consumption| WORKERS[Workers]
+    WORKERS -->|processed writes| DB
 ```
 
 - The primary database remains the source of truth in the cache-aside pattern.
@@ -440,9 +496,14 @@ flowchart LR
 - Valkey is an open-source Redis-compatible alternative.
 - Redis Streams can buffer and distribute high-throughput event processing.
 
+**Remember the whole picture:** Database = authoritative ledger; Redis cache =
+fast counter note; TTL/eviction = when notes disappear; invalidation = erasing
+an outdated note; Streams = numbered conveyor belt for incoming work.
+
 ## Official references
 
 - [Redis introduction](https://redis.io/about/)
+- [Redis cache-aside](https://redis.io/docs/latest/develop/use-cases/cache-aside/)
 - [Redis key eviction](https://redis.io/docs/latest/reference/eviction/)
 - [Redis persistence](https://redis.io/docs/latest/operate/oss_and_stack/management/persistence/)
 - [Redis Streams](https://redis.io/docs/latest/develop/data-types/streams/)
