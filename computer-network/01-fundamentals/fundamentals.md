@@ -19,6 +19,8 @@ flowchart LR
     R3 --> D
 ```
 
+**How to read the diagram:** The sender passes data to Router A. If the route through Router B is unavailable, Router A can use Router C to reach the same receiver.
+
 **Remember it:** A road closure does not stop a delivery if another road reaches the same address.
 
 ### October 29, 1969
@@ -60,6 +62,8 @@ flowchart LR
     AP -->|Ethernet| PR[Printer]
 ```
 
+**How to read the diagram:** The phone and laptop join the home access point over Wi-Fi. The printer joins by Ethernet, so the devices can communicate on the same local network.
+
 **Remember it:** A home Wi-Fi network lets your laptop send a document to a printer.
 
 ### Host
@@ -100,6 +104,8 @@ flowchart LR
     I2 --> D[Data center network]
 ```
 
+**How to read the diagram:** Home and office networks connect through their ISPs. Those provider networks link to other networks, including the network that hosts a data center.
+
 Here is something most developers never think about:
 
 > The internet is physical. It consists of cables, hardware, and buildings.
@@ -132,6 +138,8 @@ flowchart LR
     LS1 -->|submarine fiber| LS2[Landing station abroad]
     LS2 -->|other networks| DC[Data center]
 ```
+
+**How to read the diagram:** Follow the request from the phone to home Wi-Fi, the ISP, a coastal landing station, an undersea cable, and finally the data center. The response travels back through networks too; its route need not be identical.
 
 ### Engineering, Not Magic
 
@@ -184,6 +192,8 @@ flowchart LR
     S -->|response| M
 ```
 
+**How to read the diagram:** Both the browser and mobile app act as clients. Each sends a request to the server process, which returns a response to that client.
+
 A **server** is a program, or the machine running it, that listens for requests and responds.
 
 A server is simply a computer running software that listens on a port, waits for incoming requests, and sends back responses. Your laptop can also be a server.
@@ -195,6 +205,8 @@ sequenceDiagram
     Client->>Server: Sends a request
     Server-->>Client: Processes the request and sends a response back
 ```
+
+**How to read the diagram:** Read from top to bottom: the client asks, the server processes, and the server replies. Another client can make its own request to the same server.
 
 A server may handle many clients at once; its capacity depends on hardware, software, and workload.
 
@@ -210,6 +222,8 @@ flowchart LR
     P -->|Wi-Fi LAN| R[Home router]
     R -->|ISP access and WAN links| I[Other networks]
 ```
+
+**How to read the diagram:** Earbuds and phone form a personal network. The phone reaches the home router over a local network; the router reaches wider networks through the ISP.
 
 They have:
 
@@ -285,6 +299,8 @@ flowchart LR
     J3 --- C[Device C]
 ```
 
+**How to read the diagram:** The long horizontal cable is the shared bus. Each device attaches at a tap, and terminators sit at both ends of the cable.
+
 **Remember it:** Several people speak over one shared hallway. A broken main cable can affect everyone. This is a classic shared-medium design, not the usual modern switched Ethernet layout.
 
 ### Ring Topology
@@ -298,6 +314,8 @@ flowchart LR
     C --> D[Device 4]
     D --> A
 ```
+
+**How to read the diagram:** Each device connects to the next until the last connects back to the first. The arrows show one possible direction in which data moves around this ring.
 
 In a simple unidirectional ring, data travels around the loop through each device. Some ring designs have different behavior or redundant paths.
 
@@ -318,6 +336,8 @@ flowchart TB
     H --- F[Device 6]
 ```
 
+**How to read the diagram:** Every device has its own connection to the central switch. A message between two devices passes through that central point.
+
 The switch acts as the central point of connection and forwards Ethernet frames to the appropriate port. A hub instead repeats incoming signals to other ports.
 
 **Remember it:** Each desk has its own cable to the office switch. One desk cable failing need not disconnect the others.
@@ -331,14 +351,12 @@ flowchart LR
     A[Device 1] --- B[Device 2]
     A --- C[Device 3]
     A --- D[Device 4]
-    A --- E[Device 5]
     B --- C
     B --- D
-    B --- E
     C --- D
-    C --- E
-    D --- E
 ```
+
+**How to read the diagram:** Each of the four devices has a direct line to the other three. If one line fails, connected devices can still have an alternative route through another device.
 
 It forms a network of interconnected paths, providing multiple routes for data to travel.
 
@@ -360,6 +378,8 @@ flowchart TB
     C --- H[Device 5]
     C --- I[Device 6]
 ```
+
+**How to read the diagram:** Start at the core switch at the top, then follow a branch to a building switch and finally to an individual device. This branching shape is the tree.
 
 **Remember it:** A campus core switch connects building switches, which connect individual computers. The branches form a hierarchy.
 

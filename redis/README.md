@@ -41,6 +41,8 @@ flowchart LR
     DB <-->|as needed| STORAGE[(Memory pages and durable storage)]
 ```
 
+**How to read the diagram:** Users ask the application server for data. The server queries the primary database, which may use memory or storage to answer. Repeating an expensive query can add delay even when the user's internet is fast.
+
 The primary database provides the authoritative data layer. Depending on the
 database and configuration, it may read cached pages from memory or durable
 storage. Query parsing, joins, locks, computation, and network transfer can
@@ -130,6 +132,8 @@ sequenceDiagram
     A-->>U: Return total sales
 ```
 
+**How to read the diagram:** Read downward. On a cache hit, Redis already has the answer and the application returns it. On a miss, the application computes or fetches the answer from the database, saves it in Redis, and returns it.
+
 The application follows this sequence:
 
 1. Ask Redis for the cached value.
@@ -197,6 +201,8 @@ sequenceDiagram
     A-->>U: New total
 ```
 
+**How to read the diagram:** The application updates the database first, then removes the old Redis value. The next read misses the cache and builds a fresh value from the database.
+
 Example pseudocode:
 
 ```ts
@@ -246,6 +252,8 @@ flowchart TD
     EVICT --> SAVE
     POLICY -->|noeviction| ERROR[Reject memory-growing write]
 ```
+
+**How to read the diagram:** A new key fits if the configured memory limit has room. When it does not, the selected policy either removes an eligible old key to make room or rejects the memory-growing write.
 
 Redis memory behavior is controlled using `maxmemory` and
 `maxmemory-policy`. Available policies include:
@@ -338,6 +346,8 @@ flowchart TB
     A3 <-->|misses and writes| DB
 ```
 
+**How to read the diagram:** The load balancer sends users to any of three application servers. All three share the same Redis cache. Each application server still uses the primary database for cache misses and writes.
+
 This is a **distributed cache** because separate application processes use a
 shared cache service.
 
@@ -356,27 +366,26 @@ consult the stockroom ledger on a miss.
 
 ---
 
-## 8. Real-world risks and solutions
+## 8. Problems a cache introduces
 
-Adding Redis improves speed, but it introduces another system that must be
-designed and operated correctly.
+The handwritten notes list three practical concerns after several servers begin
+sharing Redis:
 
-| Risk | What can happen | Common protection |
-| --- | --- | --- |
-| Stale cache | Redis returns old data after a DB update | Invalidation, TTLs, versioned keys |
-| Memory fills | New writes fail or useful keys are removed | `maxmemory`, an appropriate eviction policy, monitoring |
-| Cache flush | Many requests suddenly hit the DB | Avoid broad clears, add jittered TTLs, warm important keys |
-| Redis server failure | Cache becomes unavailable | Timeouts, DB fallback, replicas, Sentinel/managed HA |
-| Cache stampede | Many clients rebuild the same missing key | Lock/single-flight, stale-while-revalidate, TTL jitter |
-| Durable-data loss | Memory-only data disappears after failure | RDB/AOF, replication, or keep the DB as source of truth |
+- **Clearing cached data:** A broad clear removes answers the application could
+  have reused. Prefer deleting or updating the specific key when its database
+  value changes.
+- **Limited memory and LRU:** Redis cannot keep unlimited data in RAM. Set a
+  memory limit and choose an eviction policy that fits the data. LRU is one
+  possible policy; it removes a less recently used eligible key when space is
+  needed.
+- **Server crash:** If Redis becomes unavailable, a rebuildable cache can be
+  filled again from the primary database. That fallback can be slower and can
+  put extra load on the database. If Redis itself holds important data, plan
+  persistence and recovery explicitly.
 
-An application should treat a cache failure as a performance problem rather than
-an immediate correctness failure whenever possible. If Redis is unavailable, the
-application can temporarily read from the primary database, subject to rate and
-capacity limits.
-
-**Remember it:** If the counter notes disappear, the shop can still consult
-the stockroom ledger, but a sudden crowd might overwhelm the stockroom staff.
+**Remember it:** A shared counter note is quick to consult, but it has limited
+space and can disappear. The stockroom ledger remains the source for rebuilding
+the note.
 
 ---
 
@@ -444,6 +453,8 @@ flowchart LR
     S -->|separate consumer group| LIVE[Real-time processor]
 ```
 
+**How to read the diagram:** Producers append events to one Redis Stream. Workers in a consumer group read events and write processed results to the database. A separate consumer group can read the same stream for another purpose.
+
 Real-world flow:
 
 1. Producers append events with `XADD`.
@@ -486,6 +497,8 @@ flowchart LR
     STREAM -->|worker consumption| WORKERS[Workers]
     WORKERS -->|processed writes| DB
 ```
+
+**How to read the diagram:** The upper path serves user reads through the shared cache and falls back to the database on a miss. The lower path handles incoming events through a Redis Stream and workers that write processed data to the database.
 
 - The primary database remains the source of truth in the cache-aside pattern.
 - Redis keeps frequently used or computed data in memory for fast access.

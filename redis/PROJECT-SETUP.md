@@ -9,13 +9,15 @@ flowchart LR
     F[Open project folder] --> P[Install packages with pnpm]
     P --> T[Compile TypeScript]
     T --> A[Start Express app]
-    V[Start Valkey with Docker Compose] -->|service available| A
-    A -->|ioredis commands| V
+    F --> V[Start Valkey with Docker Compose]
+    A <-->|Redis commands and replies| V
 ```
 
-The two arrows between the app and Valkey mean the app sends commands and Valkey
-returns results. Docker Compose starts the separate data service; pnpm runs the
-Node.js application.
+**How to read the diagram:** Start in the project folder. One branch installs
+packages, compiles TypeScript, and starts the Express app; the other starts
+Valkey through Docker Compose. The two-way arrow means the app sends Redis
+commands to Valkey and receives replies. Both services must be running for
+Redis-backed features to work.
 
 ## 1. Open the project folder
 

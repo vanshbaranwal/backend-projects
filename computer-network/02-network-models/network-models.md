@@ -43,6 +43,8 @@ flowchart TB
     A --> T --> I --> L --> P
 ```
 
+**How to read the diagram:** Follow the request downward. Each layer has a smaller job: choose the application service, reach its process, address the destination, cross the local link, and send signals.
+
 ## Who Defines Networking Standards?
 
 Networking standards are developed by independent standards organizations.
@@ -79,6 +81,8 @@ flowchart TB
     L1[1 Physical: signals]
     L7 --> L6 --> L5 --> L4 --> L3 --> L2 --> L1
 ```
+
+**How to read the diagram:** The seven OSI layers are stacked from the application at the top to physical signals at the bottom. A sender moves data downward; a receiver interprets it upward.
 
 ### Innovation and Flexibility
 
@@ -154,6 +158,8 @@ flowchart LR
     D --> E[Application bytes]
 ```
 
+**How to read the diagram:** TCP splits an application's byte stream into segments for transmission. The receiver uses TCP's sequence information to put the bytes back in order for the application.
+
 #### Segmentation
 
 - Data received from the upper layer is divided into smaller units called **segments**.
@@ -225,6 +231,8 @@ flowchart LR
     D --> E[Signals on one link]
 ```
 
+**How to read the diagram:** Move left to right. Application data gains a TCP header, then an IP header, then a local-link frame. The physical layer sends that frame as signals across one link.
+
 On the server side, the process happens in reverse:
 
 ```mermaid
@@ -234,6 +242,8 @@ flowchart LR
     C --> D[TCP segment: inspect port]
     D --> E[Application data]
 ```
+
+**How to read the diagram:** On receipt, move left to right through the reverse steps: interpret signals, read the frame, read the IP packet, read the transport segment, and deliver the application data.
 
 **Remember it:** Sending adds addressed envelopes around the message. Receiving opens them from the outside inward. Encryption, when used, is handled by a specific protocol such as TLS, not automatically by every OSI stack.
 
@@ -252,6 +262,8 @@ flowchart TB
     L1[1. Physical Layer]
     L5 --> L4 --> L3 --> L2 --> L1
 ```
+
+**How to read the diagram:** This learning version of TCP/IP names five layers. Read from top to bottom when sending and bottom to top when receiving. The link and physical layers handle each hop; the upper layers describe communication across the network.
 
 ### Application Layer
 
@@ -288,6 +300,8 @@ Sends bits as electrical, optical, or radio signals over a physical medium.
 The TCP/IP layers work together while data travels from a client to a service. The diagram below distinguishes the **end-to-end conversation** from the **hop-by-hop frames and signals**.
 
 ![TCP/IP working across the application, transport, internet, data link, and physical layers](../assets/diagrams/tcp-ip-working.svg)
+
+**How to read the diagram:** Read the upper lines as the logical conversation between the client app and server app: application data goes to the right service, a transport port identifies its process, and IP identifies the destination host. Read the lower device path as the actual trip: client → switch → router → router → switch → server. Frames and physical signals carry the packet over each individual link; each router makes a new frame for its next link. The colored layer lines show responsibilities, not separate cables stretching end to end.
 
 - **Application layer:** Provides services such as chat, video streaming, and email.
 - **Transport layer:** Uses port numbers to identify application processes. HTTPS commonly uses TCP port 443; SMTP server-to-server transfer commonly uses TCP port 25.
@@ -355,6 +369,8 @@ flowchart LR
     D -->|encode| E[Signals]
 ```
 
+**How to read the diagram:** Each arrow adds information needed at the next layer: TCP makes a segment, IP wraps it as a packet, and the local link wraps that packet as a frame. The frame is encoded as signals for transmission.
+
 **Remember it:** One message gets nested in envelopes; each envelope has a name at its own layer.
 
 ## Message Delivery Methods
@@ -385,6 +401,8 @@ flowchart LR
     A[Sender] --> B[One Receiver]
 ```
 
+**How to read the diagram:** One arrow connects one sender to one chosen receiver. Other devices are not the intended recipients.
+
 **Remember it:** One phone call to one person.
 
 ### Broadcast
@@ -401,6 +419,8 @@ flowchart LR
     A --> E[LAN host 4]
 ```
 
+**How to read the diagram:** Every arrow starts at the same sender and reaches a host on the local broadcast network. The message goes to all of those hosts.
+
 **Remember it:** A classroom announcement reaches everyone in that room, but not every room in the city.
 
 ### Multicast
@@ -415,6 +435,8 @@ flowchart LR
     A --> C[Subscribed Receiver 2]
     A --> D[Subscribed Receiver 3]
 ```
+
+**How to read the diagram:** The sender addresses a group. Only receivers that joined that multicast group are shown receiving the message.
 
 **Remember it:** A club announcement reaches only members who joined that group.
 
@@ -439,6 +461,8 @@ flowchart LR
     R1 -->|selected path| S1[DNS site A announces 1.1.1.1]
     R2 -->|selected path| S2[DNS site B announces 1.1.1.1]
 ```
+
+**How to read the diagram:** Both clients query the same IP address, `1.1.1.1`. Routing selects one site for each client's traffic; the chosen site depends on network routes and may not be the geographically closest one.
 
 **Remember it:** Several shops share one advertised service number; the network directs you to one shop according to its routing rules.
 

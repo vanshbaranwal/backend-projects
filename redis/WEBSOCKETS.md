@@ -1,263 +1,211 @@
-# WebSockets and Socket.IO: From Requests to Live Updates
+# Sockets and WebSockets
 
-These notes follow the three handwritten pages on sockets. They explain why a
-request–response API feels awkward for live updates, how a WebSocket connection
-works, and how the Socket.IO code in this folder applies the idea.
+These notes follow my handwritten pages in the same order: what a WebSocket
+connection is, why the usual request–response pattern is difficult for a
+real-time app, what polling does, and why keeping a connection open helps.
 
-## Contents
+## 1. What is a WebSocket?
 
-1. [Start with HTTP](#1-start-with-http)
-2. [Why polling becomes awkward](#2-why-polling-becomes-awkward)
-3. [What a WebSocket changes](#3-what-a-websocket-changes)
-4. [Connection setup and overhead](#4-connection-setup-and-overhead)
-5. [WebSocket versus Socket.IO](#5-websocket-versus-socketio)
-6. [How this project's checkbox demo works](#6-how-this-projects-checkbox-demo-works)
-7. [What the current demo does and does not persist](#7-what-the-current-demo-does-and-does-not-persist)
-8. [Quick recap](#8-quick-recap)
+An HTTP request can ask the server to **upgrade** the connection to the
+WebSocket protocol. Once the WebSocket connection is established, it stays
+open until one side closes it or the connection is lost.
 
-## 1. Start with HTTP
-
-In the familiar HTTP pattern, the client sends a request and the server sends a
-response. If the client needs fresh information later, it can send another
-request. A second browser tab does not automatically learn about a change
-made by the first tab.
-
-```mermaid
-sequenceDiagram
-    participant A as Client A
-    participant S as Server
-    participant B as Client B
-    A->>S: GET /state
-    S-->>A: Current state
-    B->>S: POST /update (state changes)
-    S-->>B: Success
-    Note over A,S: Client A still has the old view.
-    A->>S: GET /state again
-    S-->>A: Updated state
-```
-
-The handwritten note draws a connection opening and closing around each
-request. That is a useful picture of *separate request–response exchanges*,
-but a new TCP connection is **not** required for every HTTP request. HTTP/1.1
-normally reuses persistent connections. The key limitation here is that a
-standard HTTP response answers a request; the server cannot use that completed
-response to send arbitrary later updates to Client A.
-
-**Remember it:** Asking a receptionist “Has my parcel arrived?” gets one
-answer. If the parcel arrives five minutes later, that answer does not change.
-You must ask again or arrange for the receptionist to notify you.
-
-## 2. Why polling becomes awkward
-
-For a chat app or a shared checkbox board, clients want to see changes made by
-other clients. One approach is **polling**: ask the server repeatedly whether
-anything changed.
-
-```mermaid
-sequenceDiagram
-    participant A as Client A
-    participant S as Server
-    participant B as Client B
-    loop Every few seconds
-        A->>S: GET /state
-        S-->>A: No change
-    end
-    B->>S: Change checkbox
-    S-->>B: Saved
-    A->>S: Next GET /state
-    S-->>A: Updated checkbox
-```
-
-Polling has two tradeoffs:
-
-- **Delay:** a change may not appear until the next poll.
-- **Repeated work:** many clients send requests even when nothing changed.
-
-Polling can still be a sensible choice for infrequent updates. **Long polling**
-keeps a request waiting until new data or a timeout, reducing empty responses.
-Server-Sent Events can also push updates in one direction. Real-time features
-are therefore possible over HTTP; the notes' “not possible” means the basic
-one-request/one-response pattern alone is a poor fit for two-way live updates.
-
-**Remember it:** Checking the mailbox every ten seconds works, but most trips
-are wasted and a new letter waits until your next check.
-
-## 3. What a WebSocket changes
-
-The WebSocket protocol starts with an HTTP opening handshake. In the common
-HTTP/1.1 case, the client requests an **Upgrade** and the server accepts with
-`101 Switching Protocols`. After that, the same underlying connection carries
-WebSocket frames until it closes. Both sides can send messages independently:
-this is **full-duplex** communication.
+WebSocket is **full-duplex**: both the client and the server can send data to
+each other over the open connection. They do not have to wait for a new HTTP
+request before sending every message. WebSocket normally runs over TCP.
 
 ```mermaid
 sequenceDiagram
     participant C as Client
     participant S as Server
-    C->>S: HTTP GET + Upgrade: websocket
-    S-->>C: 101 Switching Protocols
-    Note over C,S: Connection stays open; WebSocket frames follow.
-    C->>S: Checkbox changed
-    S-->>C: A later update or acknowledgement
-    S->>C: Another user's change (no new GET required)
-    C->>S: New message
+    C->>S: HTTP request to upgrade to WebSocket
+    S-->>C: Upgrade accepted
+    Note over C,S: Connection stays open
+    C->>S: Send data
+    S->>C: Send data
+    C->>S: Send more data
 ```
 
-WebSocket normally runs over TCP; `wss://` adds TLS. A live connection does
-not mean zero latency or unlimited capacity: messages still travel through the
-network, and each open client consumes server and network resources. If the
-connection drops, the application must reconnect and decide how to recover
-missed state.
+**How to read the diagram:** Time moves downward. The first two arrows create
+the connection; the arrows after “Connection stays open” are messages on
+that same connection. Either side can start sending.
 
-**Remember it:** Instead of repeatedly sending letters to ask for news, the
-client and server open a phone call. Either side can speak while the call is
-active.
+**Real-world example:** Think of a phone call. After the call connects, either
+person can speak without starting a new call for every sentence.
 
-## 4. Connection setup and overhead
+> **Small clarification:** The standard WebSocket handshake uses an HTTP/1.1
+> Upgrade request. This project uses Socket.IO, which can begin with HTTP
+> polling and then upgrade its transport to WebSocket when available.
 
-The third handwritten page describes repeated connection setup and teardown
-as **overhead**. Setup takes time and bytes, and polling adds HTTP requests,
-headers, and server work for each check. WebSocket pays an opening handshake
-once, then sends smaller framed messages over the ongoing connection.
+## 2. Why do we need it?
+
+First, consider a normal HTTP request–response cycle. The client asks for
+something; the server responds. If the client wants to know something new
+later, it makes another request.
 
 ```mermaid
-flowchart LR
-    subgraph Polling["Repeated polling"]
-        P1[GET state] --> P2[No change]
-        P2 --> P3[GET state]
-        P3 --> P4[New data]
-    end
-    subgraph Live["Persistent WebSocket"]
-        W1[HTTP opening handshake] --> W2[Open connection]
-        W2 --> W3[Server sends update when it happens]
-    end
+sequenceDiagram
+    participant C as Client
+    participant S as Server
+    C->>S: Request 1
+    S-->>C: Response 1
+    Note over C,S: Later, the client asks again
+    C->>S: Request 2
+    S-->>C: Response 2
 ```
 
-The comparison is about workload, not a guarantee that WebSocket is always
-faster. For rare updates, an ordinary HTTP request may be simpler and cheaper.
-For frequent two-way messages, avoiding repeated polls often makes the live
-connection a better fit.
+**How to read the diagram:** Each right-pointing arrow is a client request;
+the matching left-pointing arrow is that request's response. The client
+initiates the second exchange when it wants fresh information.
 
-**Remember it:** Leaving a phone call open avoids dialing for every sentence,
-but keeping thousands of calls open also costs resources.
+That pattern works well when the client knows when it needs data. In a chat
+app, though, another person can send a message at any moment. The first
+client will not know about the new message until it asks again or receives
+some other notification.
 
-## 5. WebSocket versus Socket.IO
+Suppose **Client 1** fetched the current data and **Client 2** then changed
+something on the server. Client 1 still has the old data until its next
+request.
 
-The code in this folder uses **Socket.IO**. Socket.IO is an event-based library,
-not a plain WebSocket server. It can use WebSocket underneath, but it adds its
-own protocol and features, such as named events, reconnection, broadcasting,
-and an HTTP long-polling fallback. By default, a Socket.IO client may begin
-with polling and then upgrade its transport to WebSocket when possible.
-
-| Term | Meaning in these notes |
-| --- | --- |
-| HTTP | Request and response protocol used by the Express routes |
-| WebSocket | Standard full-duplex protocol after an opening handshake |
-| Socket.IO | Library used here for live named events; can run over WebSocket or another supported transport |
-| TCP | Transport beneath HTTP/1.1 and the usual WebSocket connection |
-
-A browser's native `new WebSocket(...)` client cannot directly speak to this
-Socket.IO server. The page loads Socket.IO's client script and calls `io()`.
-Likewise, `io.emit(...)` is a Socket.IO operation, not a raw WebSocket API.
-
-**Remember it:** WebSocket is the phone line. Socket.IO is a calling service
-that can use that line while adding event names, reconnection behavior, and
-fallback routes.
-
-## 6. How this project's checkbox demo works
-
-The server wraps the Express app in a Node HTTP server, attaches Socket.IO to
-it, and listens through that HTTP server:
-
-```ts
-const httpServer = http.createServer(app);
-const io = new Server();
-io.attach(httpServer);
-
-io.on("connection", (socket) => {
-  socket.on("checkbox-update", (data) => {
-    state[data.index] = data.value;
-    io.emit("checkbox-update", data);
-  });
-});
-
-httpServer.listen(port);
+```mermaid
+sequenceDiagram
+    participant C1 as Client 1
+    participant S as Server
+    participant C2 as Client 2
+    C1->>S: Ask for current data
+    S-->>C1: Current data
+    C2->>S: Change the data
+    S-->>C2: Response
+    Note over C1: Still showing the old data
+    C1->>S: Ask again
+    S-->>C1: Updated data
 ```
 
-The page at `public/index.html` loads `/socket.io/socket.io.js` and calls
-`io()`. On a checkbox change, it sends an event. The server changes the
-in-memory `state` array and broadcasts the event to **all connected clients**,
-including the sender. On receiving it, each page calls `GET /state` and
-refreshes all checkbox values.
+**How to read the diagram:** Client 2 changes the data after Client 1's
+first request. No arrow goes to Client 1 at that moment, so its view stays
+old until it asks again.
+
+**Real-world example:** You ask a shop whether an item is in stock. If the
+stock changes after the shop answers, you do not know until you call again.
+
+> **Small clarification:** An HTTP response finishes, but HTTP/1.1 can reuse
+> the underlying TCP connection for later requests. “One request, one
+> response” does not always mean “open and close a TCP connection each time.”
+
+## 3. Polling
+
+One way to keep Client 1 updated is to make it ask the server repeatedly:
+“Has anything changed?” This is called **polling**.
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant S as Server
+    C->>S: Any change?
+    S-->>C: No
+    C->>S: Any change?
+    S-->>C: No
+    C->>S: Any change?
+    S-->>C: Yes, here is the new data
+```
+
+**How to read the diagram:** The client sends the same question three times.
+The first two exchanges deliver no new information; only the third finds
+the change.
+
+The handwritten notes point out two problems:
+
+- There can be a delay between the change and the next poll.
+- Many requests may be sent even when nothing has changed, adding network
+  traffic and work for the server.
+
+**Real-world example:** Checking your mailbox every minute eventually finds
+a letter, but most checks are empty. A letter can also sit there until your
+next check.
+
+Polling is still useful in some applications. The point here is that it can
+be inefficient when many clients need frequent updates.
+
+## 4. The overhead of repeated requests
+
+Sending another request involves request headers and processing. If a new
+connection must be established, that setup adds more overhead. With many
+clients polling often, the repeated work can grow.
+
+The idea in my diagram is:
+
+```text
+Ask → receive data → ask again → receive data → ...
+       repeated request/response work
+```
+
+A WebSocket connection is established once and then reused for messages in
+both directions:
+
+```text
+Open connection → exchange data ↔ exchange more data → close connection
+```
+
+**Real-world example:** Calling a friend separately for every sentence takes
+more effort than having one conversation. The open call is useful when there
+is a lot to say, although keeping it open also uses resources.
+
+> **Small clarification:** WebSockets do not make ordinary HTTP “bad.”
+> They are useful when the application needs frequent, two-way updates.
+> Other approaches, including polling and long polling, can also be valid.
+
+## 5. How this appears in this folder's code
+
+The project uses **Socket.IO** to apply the live-connection idea. The Express
+app and Socket.IO are attached to the same Node HTTP server in
+`src/index.ts`. The browser page in `public/index.html` connects with
+`io()`.
+
+In the checkbox example, changing a box sends `checkbox-update` from the
+browser to the server. The server updates its `state` array and uses
+`io.emit("checkbox-update", data)` to tell all connected browsers. Each
+browser then requests `/state` to refresh the checkboxes.
 
 ```mermaid
 sequenceDiagram
     participant A as Browser A
-    participant S as Express + Socket.IO
+    participant S as Server
     participant B as Browser B
-    A->>S: socket.emit("checkbox-update", index/value)
-    S->>S: Update in-memory state[index]
-    S-->>A: io.emit("checkbox-update", data)
-    S-->>B: io.emit("checkbox-update", data)
+    A->>S: checkbox-update
+    S->>S: Change state array
+    S-->>A: Broadcast checkbox-update
+    S-->>B: Broadcast checkbox-update
     A->>S: GET /state
+    S-->>A: Latest checkbox state
     B->>S: GET /state
-    S-->>A: Full checkbox state
-    S-->>B: Full checkbox state
+    S-->>B: Latest checkbox state
 ```
 
-There is also a server-side `message` handler that broadcasts
-`server-message`. The browser listens for `server-message` and appends it
-to a list, but the current page has no input that emits a `message` event.
-The checkbox demonstration is the active interaction shown in the UI.
+**How to read the diagram:** Browser A sends the change. The server stores it
+and announces it to both browsers. Both browsers then fetch the complete
+state. The announcement is the live Socket.IO event; `GET /state` is still
+an ordinary HTTP request.
 
-**Remember it:** One person flips a shared switch; the server announces that
-a switch changed; every viewer then asks for the latest full switchboard.
+**Real-world example:** Someone flips a shared switch. The server announces
+the change, and the other viewers check the latest state of the switchboard.
 
-## 7. What the current demo does and does not persist
+> **Code-specific clarification:** The checkbox state is currently stored in
+> this Node process's memory. Redis in this folder is used for other examples;
+> it is not storing the checkbox state or carrying these Socket.IO events.
+> Socket.IO uses WebSocket when possible but is not identical to a plain
+> WebSocket client/server protocol.
 
-The checkbox array lives in the Node process's memory. Restarting that
-process resets the array. The Redis/Valkey connection elsewhere in
-`src/index.ts` is used for rate limiting and a book-page-count cache; the
-checkbox state and Socket.IO broadcasts **do not use Redis** in this demo.
+## Quick recap
 
-The current broadcast reaches clients connected to this one Socket.IO server.
-If the app later runs on multiple server instances, a cross-server adapter
-would be needed for broadcasts to reach clients on the other instances, and
-the checkbox state would need an appropriate shared store. Socket.IO's Redis
-adapter uses Redis Pub/Sub for cross-server event delivery; merely having
-`ioredis` in this project does not configure that adapter.
+- HTTP request–response gives the client an answer when it asks.
+- Polling asks repeatedly so the client can discover later changes.
+- Frequent polling can add delay and repeated requests.
+- A WebSocket connection stays open and lets both sides send data.
+- This project's Socket.IO checkbox example uses live events to announce
+  changes, then an HTTP request to fetch the latest full state.
 
-The sample also trusts the incoming `index` and `value`. A production shared
-board would validate event data and decide who may change the state. These
-are limits of the demo, not extra behavior hidden inside WebSocket.
-
-**Remember it:** This switchboard is written on one server's whiteboard. A
-restart wipes it, and a second office would have a different whiteboard until
-both offices share state and announcements.
-
-## 8. Quick recap
-
-```mermaid
-flowchart LR
-    NEED[Clients need fresh shared state] --> CHOICE{Update method}
-    CHOICE -->|ask periodically| POLL[HTTP polling]
-    CHOICE -->|keep a two-way channel| WS[WebSocket]
-    WS --> SIO[This project: Socket.IO events]
-    SIO --> DEMO[Broadcast change, then GET full state]
-```
-
-- HTTP requests are useful for snapshots such as `GET /state`.
-- Polling repeatedly asks for changes, adding delay and repeated work.
-- A WebSocket connection allows both endpoints to send messages while open.
-- Socket.IO is the library in this project and may use WebSocket as a transport.
-- The current demo broadcasts checkbox changes but stores state only in one
-  Node process; its Redis/Valkey client serves unrelated routes.
-
-## Sources
+## References for the short clarifications
 
 - [RFC 6455: The WebSocket Protocol](https://www.rfc-editor.org/rfc/rfc6455)
-- [RFC 9112: HTTP/1.1 persistent connections](https://www.rfc-editor.org/rfc/rfc9112)
-- [Socket.IO introduction and transport behavior](https://socket.io/docs/v4/)
-- [Socket.IO server API: attaching to an HTTP server](https://socket.io/docs/v4/server-api/)
-- [Socket.IO broadcasting API](https://socket.io/docs/v4/tutorial/api-overview)
-- [Socket.IO Redis adapter](https://socket.io/docs/v4/redis-adapter)
+- [RFC 9112: HTTP/1.1 connection persistence](https://www.rfc-editor.org/rfc/rfc9112)
+- [Socket.IO introduction](https://socket.io/docs/v4/)
