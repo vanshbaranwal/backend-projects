@@ -9,6 +9,7 @@ cache and, finally, a stream of incoming events.
 ## Additional Documentation
 
 - [Project setup, commands, and troubleshooting](./PROJECT-SETUP.md)
+- [WebSockets and Socket.IO notes](./WEBSOCKETS.md)
 
 ## Table of Contents
 
